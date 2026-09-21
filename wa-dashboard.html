@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DEJOIY Inbox</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html,body { height:100%; }
+  body { font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background:#eae6df; color:#111b21; overflow:hidden; }
+  .topstrip { height:56px; background:#075E54; }
+  .shell { display:flex; height:calc(100% - 56px); max-width:1600px; margin:-24px auto 0; background:#fff; box-shadow:0 2px 12px rgba(0,0,0,.18); border-radius:6px 6px 0 0; overflow:hidden; position:relative; z-index:2; }
+
+  /* ---------- Sidebar ---------- */
+  #sidebar { width:32%; min-width:300px; max-width:440px; display:flex; flex-direction:column; border-right:1px solid #d1d7db; background:#fff; }
+  .side-head { background:#f0f2f5; padding:10px 14px; display:flex; align-items:center; gap:12px; }
+  .side-head .brand { width:40px; height:40px; border-radius:50%; background:#075E54; color:#fff; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:20px; }
+  .side-head h1 { font-size:17px; font-weight:600; flex:1; }
+  .iconbtn { background:none; border:none; cursor:pointer; color:#54656f; padding:6px; border-radius:50%; display:flex; }
+  .iconbtn:hover { background:#e4e6e9; }
+  .searchbar { padding:8px 12px; background:#f0f2f5; }
+  .searchbar .box { background:#fff; border-radius:8px; display:flex; align-items:center; padding:7px 12px; gap:10px; }
+  .searchbar input { border:none; outline:none; flex:1; font-size:14px; background:transparent; }
+  #chatlist { flex:1; overflow-y:auto; }
+  .chat { display:flex; gap:12px; padding:11px 14px; cursor:pointer; border-bottom:1px solid #f0f2f5; align-items:center; }
+  .chat:hover { background:#f5f6f6; }
+  .chat.active { background:#ebebeb; }
+  .avatar { width:48px; height:48px; border-radius:50%; color:#fff; font-weight:600; font-size:20px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .chat .meta { flex:1; min-width:0; }
+  .chat .row1 { display:flex; justify-content:space-between; align-items:baseline; gap:8px; }
+  .chat .nm { font-size:16px; font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .chat .tm { font-size:12px; color:#667781; flex-shrink:0; }
+  .chat .row2 { display:flex; justify-content:space-between; align-items:center; gap:8px; margin-top:2px; }
+  .chat .snip { font-size:14px; color:#667781; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .unread { background:#25d366; color:#fff; font-size:12px; font-weight:600; min-width:20px; height:20px; border-radius:10px; display:flex; align-items:center; justify-content:center; padding:0 6px; flex-shrink:0; }
+  .empty-note { padding:30px; text-align:center; color:#8696a0; font-size:14px; }
+
+  /* ---------- Main ---------- */
+  #main { flex:1; display:flex; flex-direction:column; background:#efeae2; position:relative; }
+  #welcome { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; color:#8696a0; text-align:center; padding:20px; border-bottom:6px solid #25d366; }
+  #welcome h2 { font-size:28px; font-weight:300; color:#41525d; }
+  #welcome p { font-size:14px; max-width:480px; line-height:1.6; }
+  #chatview { flex:1; display:flex; flex-direction:column; min-height:0; }
+  .chat-head { background:#f0f2f5; padding:8px 14px; display:flex; align-items:center; gap:12px; }
+  .chat-head .avatar { width:40px; height:40px; font-size:17px; }
+  .chat-head .who { flex:1; min-width:0; }
+  .chat-head .who .nm { font-size:16px; font-weight:500; }
+  .chat-head .who .num { font-size:12px; color:#667781; }
+  #backbtn { display:none; }
+  #msgs { flex:1; overflow-y:auto; padding:18px 8%; background-color:#efeae2;
+    background-image: radial-gradient(#d8d2c8 1px, transparent 1px); background-size:22px 22px; }
+  .daypill { text-align:center; margin:8px 0 14px; }
+  .daypill span { background:#e9edef; color:#54656f; font-size:12.5px; padding:6px 12px; border-radius:8px; box-shadow:0 1px 1px rgba(0,0,0,.12); }
+  .row { display:flex; margin-bottom:6px; }
+  .row.in { justify-content:flex-start; }
+  .row.out { justify-content:flex-end; }
+  .bub { max-width:65%; padding:7px 9px 6px; border-radius:8px; font-size:14.5px; line-height:1.45; position:relative; box-shadow:0 1px 1px rgba(0,0,0,.15); word-wrap:break-word; }
+  .row.in .bub { background:#fff; border-top-left-radius:0; }
+  .row.out .bub { background:#d9fdd3; border-top-right-radius:0; }
+  .bub .txt { white-space:pre-wrap; }
+  .bub .t { font-size:11px; color:#667781; float:right; margin:8px 0 0 8px; display:flex; align-items:center; gap:3px; }
+  .ticks { color:#53bdeb; display:inline-flex; }
+  .composer { background:#f0f2f5; padding:8px 14px; display:flex; gap:10px; align-items:center; }
+  .composer input { flex:1; border:none; outline:none; border-radius:8px; padding:11px 14px; font-size:15px; background:#fff; color:#8696a0; }
+  .conn { font-size:12px; color:#8696a0; text-align:center; padding:4px; background:#f0f2f5; }
+  .conn.bad { color:#c0392b; }
+
+  @media (max-width: 760px) {
+    .shell { margin:0; border-radius:0; height:calc(100% - 56px); }
+    #sidebar { width:100%; max-width:none; }
+    #sidebar.hidden-m { display:none; }
+    #backbtn { display:flex; }
+    #msgs { padding:14px 12px; }
+    .bub { max-width:85%; }
+  }
+</style>
+</head>
+<body>
+<div class="topstrip"></div>
+<div class="shell">
+  <aside id="sidebar">
+    <div class="side-head">
+      <div class="brand">D</div>
+      <h1>DEJOIY Inbox</h1>
+      <button class="iconbtn" id="refresh" title="Refresh">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-2.6-6.4"/><path d="M21 3v6h-6"/></svg>
+      </button>
+    </div>
+    <div class="searchbar">
+      <div class="box">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8696a0" stroke-width="2.4"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+        <input id="q" type="text" placeholder="Search chats" autocomplete="off">
+      </div>
+    </div>
+    <div id="chatlist"></div>
+  </aside>
+  <main id="main">
+    <div id="welcome">
+      <svg width="72" height="72" viewBox="0 0 24 24" fill="#c4cdd3"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm5.4 14.1c-.2.6-1.3 1.2-1.8 1.2-.5.1-1 .2-3.4-.7-2.9-1.2-4.7-4.1-4.9-4.3-.1-.2-1.1-1.5-1.1-2.9s.7-2 1-2.3c.2-.3.5-.3.7-.3h.5c.2 0 .4 0 .6.5l.8 2c.1.2.1.4 0 .6l-.4.5-.5.5c-.2.2-.3.4-.1.7.2.3.9 1.5 2 2.4 1.4 1.2 2.5 1.6 2.9 1.8.3.2.5.1.7-.1l1-1.2c.2-.3.4-.2.7-.1l2 1c.3.1.5.2.6.4 0 .1 0 .7-.2 1.2z"/></svg>
+      <h2>DEJOIY Inbox</h2>
+      <p>+91 87006 72329 par aane wale saare WhatsApp messages yahan dikhenge.<br>Left me se koi contact chuno — poori chat khul jayegi.</p>
+      <p style="font-size:12px">Hari patti wale messages <b>aapne bheje</b> (outgoing),<br>safed wale <b>customer ne bheje</b> (incoming).</p>
+    </div>
+    <div id="chatview" hidden>
+      <div class="chat-head">
+        <button class="iconbtn" id="backbtn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg></button>
+        <div class="avatar" id="cv-avatar">?</div>
+        <div class="who"><div class="nm" id="cv-name"></div><div class="num" id="cv-num"></div></div>
+      </div>
+      <div class="conn" id="conn">connected</div>
+      <div id="msgs"></div>
+      <div class="composer">
+        <input type="text" disabled placeholder="Reply yahan se nahi hota — mujhe bolo, main bhej dunga">
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+(function(){
+  var API = 'https://dejoiy-wa-webhook.partners-dejoiy.workers.dev/inbox';
+  var PALETTE = ['#00a0dc','#8e24aa','#e91e63','#f4511e','#43a047','#00897b','#3949ab','#7cb342','#fb8c00','#6d4c41'];
+  var chats = {};       // number -> {number,name,msgs:[],lastAt}
+  var order = [];       // numbers sorted by lastAt desc
+  var selected = null;
+  var lastSeen = {};
+  try { lastSeen = JSON.parse(localStorage.getItem('dejoiy_inbox_seen') || '{}'); } catch(e){ lastSeen = {}; }
+
+  function $(id){ return document.getElementById(id); }
+  function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+  function numOf(e){ return e.direction === 'out' ? (e.to||'') : (e.from||''); }
+  function colorFor(n){ var h=0; for(var i=0;i<n.length;i++) h=(h*31+n.charCodeAt(i))>>>0; return PALETTE[h%PALETTE.length]; }
+  function fmtTime(iso){ try{ return new Date(iso).toLocaleTimeString('en-IN',{timeZone:'Asia/Kolkata',hour:'2-digit',minute:'2-digit',hour12:true}).toUpperCase(); }catch(e){ return ''; } }
+  function dayLabel(iso){
+    try{
+      var d = new Date(new Date(iso).toLocaleString('en-US',{timeZone:'Asia/Kolkata'}));
+      var now = new Date(new Date().toLocaleString('en-US',{timeZone:'Asia/Kolkata'}));
+      var dd = new Date(d.getFullYear(),d.getMonth(),d.getDate());
+      var nd = new Date(now.getFullYear(),now.getMonth(),now.getDate());
+      var diff = Math.round((nd-dd)/86400000);
+      if(diff===0) return 'TODAY'; if(diff===1) return 'YESTERDAY';
+      return d.toLocaleDateString('en-IN',{day:'2-digit',month:'2-digit',year:'numeric'});
+    }catch(e){ return ''; }
+  }
+  function listTime(iso){
+    try{
+      var d = new Date(new Date(iso).toLocaleString('en-US',{timeZone:'Asia/Kolkata'}));
+      var now = new Date(new Date().toLocaleString('en-US',{timeZone:'Asia/Kolkata'}));
+      var sameDay = d.toDateString()===now.toDateString();
+      if(sameDay) return fmtTime(iso);
+      return d.toLocaleDateString('en-IN',{day:'2-digit',month:'2-digit',year:'2-digit'});
+    }catch(e){ return ''; }
+  }
+
+  function rebuild(arr){
+    chats = {};
+    for(var i=0;i<arr.length;i++){
+      var e=arr[i], n=numOf(e);
+      if(!n) continue;
+      if(!chats[n]) chats[n]={number:n,name:'',msgs:[],lastAt:''};
+      var c=chats[n];
+      if(e.name) c.name=e.name;
+      c.msgs.push(e);
+      if(!c.lastAt || e.at>c.lastAt) c.lastAt=e.at;
+    }
+    order=Object.keys(chats).sort(function(a,b){ return chats[b].lastAt<chats[a].lastAt?-1:1; });
+  }
+
+  function unreadCount(n){
+    var c=chats[n]; if(!c) return 0;
+    var seen=lastSeen[n]||'';
+    var k=0;
+    for(var i=0;i<c.msgs.length;i++){ var e=c.msgs[i]; if(e.direction!=='out' && e.at>seen) k++; }
+    return k;
+  }
+
+  function renderList(){
+    var q=$('q').value.trim().toLowerCase();
+    var html='';
+    for(var i=0;i<order.length;i++){
+      var n=order[i], c=chats[n];
+      var disp=c.name||('+'+n);
+      if(q && disp.toLowerCase().indexOf(q)<0 && n.indexOf(q)<0) continue;
+      var last=c.msgs[c.msgs.length-1];
+      var snip=(last.direction==='out'?'You: ':'')+(last.text||'');
+      var un=unreadCount(n);
+      html+='<div class="chat'+(selected===n?' active':'')+'" data-n="'+esc(n)+'">'
+        +'<div class="avatar" style="background:'+colorFor(n)+'">'+esc((c.name||n).charAt(0).toUpperCase())+'</div>'
+        +'<div class="meta"><div class="row1"><div class="nm">'+esc(disp)+'</div><div class="tm">'+esc(listTime(c.lastAt))+'</div></div>'
+        +'<div class="row2"><div class="snip">'+esc(snip)+'</div>'+(un?'<div class="unread">'+un+'</div>':'')+'</div></div></div>';
+    }
+    $('chatlist').innerHTML = html || '<div class="empty-note">Abhi koi message nahi aaya.<br>+91 87006 72329 par message bhejo.</div>';
+    var nodes=$('chatlist').getElementsByClassName('chat');
+    for(var j=0;j<nodes.length;j++){ (function(el){ el.onclick=function(){ openChat(el.getAttribute('data-n')); }; })(nodes[j]); }
+  }
+
+  function openChat(n){
+    selected=n;
+    lastSeen[n]=new Date().toISOString();
+    try{ localStorage.setItem('dejoiy_inbox_seen',JSON.stringify(lastSeen)); }catch(e){}
+    renderList(); renderChat();
+    if(window.innerWidth<=760){ $('sidebar').classList.add('hidden-m'); }
+  }
+
+  function renderChat(){
+    if(!selected || !chats[selected]){ $('welcome').hidden=false; $('chatview').hidden=true; return; }
+    var c=chats[selected];
+    $('welcome').hidden=true; $('chatview').hidden=false;
+    $('cv-avatar').textContent=(c.name||c.number).charAt(0).toUpperCase();
+    $('cv-avatar').style.background=colorFor(c.number);
+    $('cv-name').textContent=c.name||('+'+c.number);
+    $('cv-num').textContent='+'+c.number;
+    var box=$('msgs');
+    var nearBottom = box.scrollHeight-box.scrollTop-box.clientHeight < 120;
+    var html='', lastDay='';
+    var msgs=c.msgs.slice().sort(function(a,b){ return a.at<b.at?-1:1; });
+    for(var i=0;i<msgs.length;i++){
+      var e=msgs[i], dl=dayLabel(e.at);
+      if(dl!==lastDay){ html+='<div class="daypill"><span>'+esc(dl)+'</span></div>'; lastDay=dl; }
+      var out=e.direction==='out';
+      html+='<div class="row '+(out?'out':'in')+'"><div class="bub"><span class="txt">'+esc(e.text||'')+'</span>'
+        +'<span class="t">'+esc(fmtTime(e.at))
+        +(out?'<span class="ticks"><svg width="18" height="12" viewBox="0 0 18 12" fill="none"><path d="M1 6.5l3.2 3L11 3" stroke="currentColor" stroke-width="1.6"/><path d="M8 9.5l1.5 1.5L16.5 4" stroke="currentColor" stroke-width="1.6"/></svg></span>':'')
+        +'</span></div></div>';
+    }
+    box.innerHTML=html;
+    if(nearBottom) box.scrollTop=box.scrollHeight;
+  }
+
+  var firstLoad=true;
+  function load(){
+    fetch(API,{cache:'no-store'}).then(function(r){ if(!r.ok) throw 0; return r.json(); })
+    .then(function(arr){
+      rebuild(arr||[]);
+      if(selected && !chats[selected]) selected=null;
+      renderList(); renderChat();
+      var cn=$('conn'); cn.textContent='connected'; cn.className='conn';
+      if(firstLoad){ firstLoad=false; var b=$('msgs'); b.scrollTop=b.scrollHeight; }
+    })
+    .catch(function(){ var cn=$('conn'); cn.textContent='offline — retrying…'; cn.className='conn bad'; });
+  }
+
+  $('q').addEventListener('input',renderList);
+  $('refresh').onclick=load;
+  $('backbtn').onclick=function(){ selected=null; $('sidebar').classList.remove('hidden-m'); renderList(); renderChat(); };
+  load();
+  setInterval(load,15000);
+})();
+</script>
+</body>
+</html>
