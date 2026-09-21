@@ -61,7 +61,10 @@
   .bub .t { font-size:11px; color:#667781; float:right; margin:8px 0 0 8px; display:flex; align-items:center; gap:3px; }
   .ticks { color:#53bdeb; display:inline-flex; }
   .composer { background:#f0f2f5; padding:8px 14px; display:flex; gap:10px; align-items:center; }
-  .composer input { flex:1; border:none; outline:none; border-radius:8px; padding:11px 14px; font-size:15px; background:#fff; color:#8696a0; }
+  .composer input { flex:1; border:none; outline:none; border-radius:8px; padding:11px 14px; font-size:15px; background:#fff; color:#111b21; }
+  #sendbtn { background:#00a884; border:none; cursor:pointer; width:44px; height:44px; border-radius:50%; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  #sendbtn:hover { background:#029073; }
+  #sendbtn:disabled { background:#a8c4bc; cursor:default; }
   .conn { font-size:12px; color:#8696a0; text-align:center; padding:4px; background:#f0f2f5; }
   .conn.bad { color:#c0392b; }
 
@@ -110,7 +113,10 @@
       <div class="conn" id="conn">connected</div>
       <div id="msgs"></div>
       <div class="composer">
-        <input type="text" disabled placeholder="Reply yahan se nahi hota — mujhe bolo, main bhej dunga">
+        <input id="sendbox" type="text" placeholder="Message likho" autocomplete="off">
+        <button id="sendbtn" title="Bhejo">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="#fff"><path d="M2 21l21-9L2 3v7l15 2-15 2v7z"/></svg>
+        </button>
       </div>
     </div>
   </main>
@@ -119,6 +125,7 @@
 <script>
 (function(){
   var API = 'https://dejoiy-wa-webhook.partners-dejoiy.workers.dev/inbox';
+  var SEND = 'https://dejoiy-wa-webhook.partners-dejoiy.workers.dev/send';
   var PALETTE = ['#00a0dc','#8e24aa','#e91e63','#f4511e','#43a047','#00897b','#3949ab','#7cb342','#fb8c00','#6d4c41'];
   var chats = {};       // number -> {number,name,msgs:[],lastAt}
   var order = [];       // numbers sorted by lastAt desc
@@ -243,6 +250,37 @@
   $('q').addEventListener('input',renderList);
   $('refresh').onclick=load;
   $('backbtn').onclick=function(){ selected=null; $('sidebar').classList.remove('hidden-m'); renderList(); renderChat(); };
+
+  function getPass(){
+    var pw='';
+    try{ pw=localStorage.getItem('dejoiy_inbox_pw')||''; }catch(e){}
+    if(!pw){
+      pw=prompt('Dashboard password daalo (pehli baar ek baar maangega):')||'';
+      if(pw){ try{ localStorage.setItem('dejoiy_inbox_pw',pw); }catch(e){} }
+    }
+    return pw;
+  }
+  function doSend(){
+    if(!selected) return;
+    var box=$('sendbox'), text=box.value.trim();
+    if(!text) return;
+    var pw=getPass(); if(!pw) return;
+    var btn=$('sendbtn'); btn.disabled=true;
+    fetch(SEND,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({password:pw,to:selected,name:(chats[selected]&&chats[selected].name)||'',text:text})})
+    .then(function(r){ return r.json().then(function(j){ return {s:r.status,j:j}; }); })
+    .then(function(res){
+      btn.disabled=false;
+      if(res.s===200 && res.j.ok){ box.value=''; load(); }
+      else{
+        if(res.s===403){ try{localStorage.removeItem('dejoiy_inbox_pw');}catch(e){} alert('Password galat hai. Dobara try karo.'); }
+        else alert('Bheja nahi gaya: '+((res.j&&res.j.error)||'error'));
+      }
+    })
+    .catch(function(){ btn.disabled=false; alert('Network error — dobara try karo.'); });
+  }
+  $('sendbtn').onclick=doSend;
+  $('sendbox').addEventListener('keydown',function(e){ if(e.key==='Enter') doSend(); });
   load();
   setInterval(load,15000);
 })();
